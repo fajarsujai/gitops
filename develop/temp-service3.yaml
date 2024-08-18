@@ -1,0 +1,108 @@
+---
+# Source: myhelm/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: service3-myhelm
+  labels:
+    helm.sh/chart: myhelm-0.5.0
+    app.kubernetes.io/name: myhelm
+    app.kubernetes.io/instance: service3
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+automountServiceAccountToken: true
+---
+# Source: myhelm/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: 
+  # name: service3-myhelm
+  labels:
+    helm.sh/chart: myhelm-0.5.0
+    app.kubernetes.io/name: myhelm
+    app.kubernetes.io/instance: service3
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app.kubernetes.io/name: myhelm
+    app.kubernetes.io/instance: service3
+---
+# Source: myhelm/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "-"
+  # name: service3-myhelm
+  labels:
+    helm.sh/chart: myhelm-0.5.0
+    app.kubernetes.io/name: myhelm
+    app.kubernetes.io/instance: service3
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: myhelm
+      app.kubernetes.io/instance: service3
+  template:
+    metadata:
+      labels:
+        helm.sh/chart: myhelm-0.5.0
+        app.kubernetes.io/name: myhelm
+        app.kubernetes.io/instance: service3
+        app.kubernetes.io/version: "1.16.0"
+        app.kubernetes.io/managed-by: Helm
+    spec:
+      serviceAccountName: service3-myhelm
+      securityContext:
+        {}
+      containers:
+        - name: myhelm
+          securityContext:
+            {}
+          image: "nginx:1.16.0"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+          resources:
+            {}
+---
+# Source: myhelm/templates/tests/test-connection.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "service3-myhelm-test-connection"
+  labels:
+    helm.sh/chart: myhelm-0.5.0
+    app.kubernetes.io/name: myhelm
+    app.kubernetes.io/instance: service3
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    "helm.sh/hook": test
+spec:
+  containers:
+    - name: wget
+      image: busybox
+      command: ['wget']
+      args: ['service3-myhelm:80']
+  restartPolicy: Never
